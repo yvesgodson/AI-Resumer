@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text Summarizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 25px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(15px);
+            overflow: hidden;
+            animation: slideIn 0.8s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4);
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.4rem;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
+            font-weight: 300;
+        }
+
+        .main-content {
+            padding: 40px 30px;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #e8f4fd 0%, #f0f8ff 100%);
+            border: none;
+            border-left: 5px solid #667eea;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-box::before {
+            content: '🤖';
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            opacity: 0.3;
+        }
+
+        .info-box strong {
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .text-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .text-area {
+            width: 100%;
+            height: 200px;
+            padding: 25px;
+            font-size: 1.1rem;
+            border: 3px solid #e0e6ed;
+            border-radius: 15px;
+            resize: none;
+            background: #fafbfc;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            font-family: inherit;
+            line-height: 1.6;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .text-area:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .text-area[readonly] {
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8f0ff 100%);
+            color: #2c3e50;
+            border-color: #c1d1e8;
+            cursor: default;
+        }
+
+        .text-area::placeholder {
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        .action-section {
+            position: relative;
+        }
+
+        .summarize-button {
+            width: 100%;
+            padding: 22px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .summarize-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s;
+        }
+
+        .summarize-button:hover::before {
+            left: 100%;
+        }
+
+        .summarize-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+        }
+
+        .summarize-button:active {
+            transform: translateY(-1px);
+        }
+
+        .summarize-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 25px 0;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(102, 126, 234, 0.2);
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            color: #667eea;
+            font-size: 1.1rem;
+            font-weight: 500;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .char-counter {
+            text-align: right;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-top: 8px;
+            transition: color 0.3s ease;
+        }
+
+        .char-counter.valid {
+            color: #10b981;
+        }
+
+        .char-counter.invalid {
+            color: #ef4444;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            color: #dc2626;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #dc2626;
+            display: none;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            color: #059669;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #059669;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 20px;
+            }
+
+            .title {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.2rem;
+            }
+
+            .main-content {
+                padding: 30px 20px;
+            }
+
+            .text-area {
+                height: 150px;
+                padding: 20px;
+                font-size: 1rem;
+            }
+
+            .summarize-button {
+                padding: 18px;
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .text-area {
+                height: 120px;
+                padding: 15px;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">AI RÉSUMEUR</h1>
+            <p class="subtitle">Transformez vos textes longs en résumés percutants avec l'IA</p>
+        </div>
+
+        <div class="main-content">
+            <div class="info-box fade-in">
+                <strong>✨ AI RÉSUMEUR PRO</strong><br>
+                Utilisez la puissance de l'intelligence artificielle pour créer des résumés précis et concis.
+                Parfait pour analyser des articles, documents ou tout contenu textuel en quelques secondes.
+            </div>
+
+            <div class="text-section">
+                <div>
+                    <textarea class="text-area" id="sourceText"
+                        placeholder="Collez votre texte ici... (minimum 100 caractères pour un résumé optimal)"
+                        oninput="updateCharCounter()"></textarea>
+                    <div class="char-counter" id="charCounter">0 / 100 caractères minimum</div>
+                </div>
+
+                <div>
+                    <textarea class="text-area" id="summaryText"
+                        placeholder="Votre résumé intelligent apparaîtra ici..." readonly></textarea>
+                </div>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p class="loading-text">🧠 Analyse intelligente en cours...</p>
+            </div>
+
+            <div class="action-section">
+                <button class="summarize-button" id="summarizeButton" onclick="processText()">
+                    ✨ Générer le résumé IA
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isProcessing = false;
+
+        function updateCharCounter() {
+            const input = document.getElementById("sourceText");
+            const counter = document.getElementById("charCounter");
+            const length = input.value.length;
+
+            counter.textContent = `${length} / 100 caractères minimum`;
+
+            if (length >= 100) {
+                counter.className = "char-counter valid";
+            } else if (length > 0) {
+                counter.className = "char-counter invalid";
+            } else {
+                counter.className = "char-counter";
+            }
+        }
+
+        function showMessage(type, message) {
+            const errorDiv = document.getElementById("errorMessage");
+            const successDiv = document.getElementById("successMessage");
+
+            // Cacher tous les messages
+            errorDiv.style.display = "none";
+            successDiv.style.display = "none";
+
+            if (type === "error") {
+                errorDiv.textContent = message;
+                errorDiv.style.display = "block";
+                setTimeout(() => {
+                    errorDiv.style.display = "none";
+                }, 5000);
+            } else if (type === "success") {
+                successDiv.textContent = message;
+                successDiv.style.display = "block";
+                setTimeout(() => {
+                    successDiv.style.display = "none";
+                }, 3000);
+            }
+        }
+
+        async function processText() {
+            if (isProcessing) return;
+
+            const input = document.getElementById("sourceText").value.trim();
+            const summaryBox = document.getElementById("summaryText");
+            const loading = document.getElementById("loading");
+            const button = document.getElementById("summarizeButton");
+
+            if (!input) {
+                showMessage("error", " Veuillez saisir un texte à résumer.");
+                return;
+            }
+
+            if (input.length < 100) {
+                showMessage("error", " Le texte doit contenir au moins 100 caractères pour garantir un résumé de qualité.");
+                return;
+            }
+
+            isProcessing = true;
+            loading.style.display = "block";
+            summaryBox.value = "";
+            button.disabled = true;
+            button.textContent = "🔄 Traitement en cours...";
+
+            try {
+                const response = await fetch("/api/resume", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ texte: input })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.resume) {
+                    summaryBox.value = data.resume.trim();
+                    summaryBox.classList.add("fade-in");
+                    showMessage("success", " Résumé généré avec succès !");
+
+                    summaryBox.style.transform = "scale(1.02)";
+                    setTimeout(() => {
+                        summaryBox.style.transform = "scale(1)";
+                    }, 200);
+
+                } else {
+                    const errorMsg = data.erreur || "Une erreur inattendue s'est produite.";
+                    showMessage("error", ` ${errorMsg}`);
+                    summaryBox.value = `Erreur: ${errorMsg}`;
+                }
+
+            } catch (error) {
+                console.error("Erreur réseau:", error);
+                showMessage("error", "🌐 Erreur de connexion. Vérifiez votre réseau et que le serveur est démarré.");
+                summaryBox.value = " Erreur de connexion au serveur.";
+            } finally {
+                isProcessing = false;
+                loading.style.display = "none";
+                button.disabled = false;
+                button.textContent = "✨ Générer le résumé IA";
+            }
+        }
+
+        document.addEventListener("keydown", function (event) {
+            if (event.ctrlKey && event.key === "Enter") {
+                event.preventDefault();
+                processText();
+            }
+        });
+
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const sourceText = document.getElementById("sourceText");
+            const summaryText = document.getElementById("summaryText");
+
+            sourceText.addEventListener("input", function () {
+                updateCharCounter();
+                if (this.scrollHeight > 200) {
+                    autoResize(this);
+                }
+            });
+
+            sourceText.addEventListener("focus", function () {
+                this.parentElement.style.transform = "scale(1.01)";
+            });
+
+            sourceText.addEventListener("blur", function () {
+                this.parentElement.style.transform = "scale(1)";
+            });
+
+            const button = document.getElementById("summarizeButton");
+            button.title = "Raccourci: Ctrl + Entrée";
+        });
+
+        function copyToClipboard() {
+            const summaryText = document.getElementById("summaryText");
+            if (summaryText.value.trim()) {
+                navigator.clipboard.writeText(summaryText.value).then(() => {
+                    showMessage("success", "📋 Résumé copié dans le presse-papiers !");
+                });
+            }
+        }
+
+        document.getElementById("summaryText").addEventListener("dblclick", copyToClipboard);
+    </script>
+</body>
+
+</html>
